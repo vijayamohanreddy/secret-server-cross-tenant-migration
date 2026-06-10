@@ -4,6 +4,8 @@
 
 ## Overview
 
+<img width="1894" height="1432" alt="Settings" src="https://github.com/user-attachments/assets/0fc64d86-0242-4944-922c-e9983fee1ced" />
+
 The Delinea Secret Server Cross-Tenant Migration Tool Unofficial is a Windows PowerShell 5.1 GUI application designed to migrate secrets and related metadata between Delinea Secret Server environments. It supports cloud-to-cloud, on-premises-to-on-premises, and hybrid migration scenarios where source and target tenants must be managed independently.
 
 The tool is built for administrators who need a controlled, repeatable way to export, validate, import, reconcile, and clean up migrated data while preserving as much operational context as possible.
@@ -20,11 +22,24 @@ The tool is built for administrators who need a controlled, repeatable way to ex
 
 1. **Export Secrets** — Export all Secrets, Folders, and related metadata from the source tenant into a JSON file using the Export tab.
 
+   <img width="1896" height="1437" alt="Actions" src="https://github.com/user-attachments/assets/5bff34dd-bc93-4e79-a92e-47c72faaba8b" />
+
 2. **Update Permissions** — If user or group names differ between source and target tenants, use the Update Permissions tool to apply your CSV‑based mapping. This updates the exported JSON with correct target‑tenant principals.
+
+   <img width="1894" height="1432" alt="Tools" src="https://github.com/user-attachments/assets/ed3255b5-2c44-42c0-a5d9-6d360ddc15e2" />
 
 3. **Validate Templates** — If you do not want to import or create new templates in the target tenant, use the Template Check tab to compare source vs. target templates. The tool generates an “updatable CSV” showing mismatches. Apply this CSV to update the exported JSON so all secrets align with target‑tenant templates.
 
+   <img width="1899" height="1531" alt="Template-Check" src="https://github.com/user-attachments/assets/90b4fdcb-2e90-4cb4-a4cb-196eddd3c076" />
+
 4. **Prepare for Import** — After permissions and templates are aligned, your JSON is fully ready for import. Use the Import tab to load the refined JSON into the target tenant.
+
+      <img width="1896" height="1437" alt="Actions" src="https://github.com/user-attachments/assets/5bff34dd-bc93-4e79-a92e-47c72faaba8b" />
+
+5. **Reconcile Missing Items** — After the first import, if any secrets fail to migrate or appear incomplete, use the Reconciliation tab to compare the source and target environments. You can preview differences, identify missing secrets, import any missing items, restore missing attachments, and apply any required permission fixes.
+
+<img width="1893" height="1531" alt="Reconciliation" src="https://github.com/user-attachments/assets/5d9c4317-4e02-460d-8cdb-489dc9c03dff" />
+
    
 ## Key Capabilities
 
@@ -40,6 +55,7 @@ The tool is built for administrators who need a controlled, repeatable way to ex
 - Embed template export XML for later template migration
 
 ### Import
+
 
 - Import from JSON, XML, CSV, or ZIP with automatic format detection
 - Create folder hierarchy on the target or flatten into a single target folder
