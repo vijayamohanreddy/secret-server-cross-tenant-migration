@@ -116,9 +116,6 @@
     
     Launches the GUI migration tool. Configure source and target tenant 
     credentials, select options, and use Export/Import buttons.
-
-.LINK
-    https://docs.delinea.com/secrets/current/api-scripting/sdk-cli/index.md
 #>
 
 # Optional: double-check unblock (harmless if already unblocked)
