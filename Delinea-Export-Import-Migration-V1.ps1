@@ -121,7 +121,7 @@
 # Optional: double-check unblock (harmless if already unblocked)
 $MyInvocation.MyCommand.Path | Unblock-File -ErrorAction SilentlyContinue
 # ============================================================
-# VERSION CHECK (AppData version storage)
+# VERSION CHECK (Hidden AppData folder)
 # ============================================================
 
 Add-Type -AssemblyName System.Windows.Forms
@@ -147,37 +147,25 @@ $ScriptDir = Split-Path -Parent $ScriptPath
 Write-Host "Script directory: $ScriptDir"
 
 # ============================================================
-# STORE VERSION FILE IN APPDATA (HIDDEN FROM USER)
+# CREATE HIDDEN APPDATA FOLDER (NOT THE FILE)
 # ============================================================
 
 $AppDataFolder = Join-Path $env:APPDATA "DelineaMigrationTool"
+
 if (-not (Test-Path $AppDataFolder)) {
     New-Item -ItemType Directory -Path $AppDataFolder | Out-Null
+    # Hide the folder (safe)
+    (Get-Item $AppDataFolder).Attributes += 'Hidden'
 }
 
 $LocalVersionFile = Join-Path $AppDataFolder "version.local.txt"
 
-# Create local version file if missing
+# Create version file if missing
 if (-not (Test-Path $LocalVersionFile)) {
-
     "0.0.0" | Out-File -FilePath $LocalVersionFile -Encoding ASCII -Force
-
-    # Ensure file is readable/writable
-    $acl = Get-Acl $LocalVersionFile
-    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$env:USERNAME","FullControl","Allow")
-    $acl.SetAccessRule($rule)
-    Set-Acl $LocalVersionFile $acl
-
-    # Hide the file (add attribute safely)
-    (Get-Item $LocalVersionFile).Attributes += 'Hidden'
 }
 
-# Ensure existing file is hidden (add attribute safely)
-if (Test-Path $LocalVersionFile) {
-    (Get-Item $LocalVersionFile).Attributes += 'Hidden'
-}
-
-Write-Host "Local version file stored in AppData (hidden)."
+Write-Host "Local version file stored in hidden AppData folder."
 
 # Remote version file (RAW GitHub URL)
 $RemoteVersionUrl = "https://raw.githubusercontent.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/main/version.txt"
@@ -188,7 +176,7 @@ try {
     $LocalVersion = (Get-Content -Path $LocalVersionFile -ErrorAction Stop | Select-Object -First 1).Trim()
 } catch {
     [System.Windows.Forms.MessageBox]::Show(
-        "Unable to read version file in AppData. Access denied.",
+        "Unable to read version file in AppData.",
         "Version File Error",
         [System.Windows.Forms.MessageBoxButtons]::OK,
         [System.Windows.Forms.MessageBoxIcon]::Error
@@ -196,7 +184,7 @@ try {
     return
 }
 
-Write-Host "Local version (hidden): $LocalVersion"
+Write-Host "Local version: $LocalVersion"
 
 # Retrieve remote version
 try {
@@ -248,7 +236,6 @@ if ($LocalVersion -ne $LatestVersion) {
 
             # Update version file
             $LatestVersion | Out-File -FilePath $LocalVersionFile -Encoding ASCII -Force
-            (Get-Item $LocalVersionFile).Attributes += 'Hidden'
 
             [System.Windows.Forms.MessageBox]::Show(
                 "The tool has been updated to version $LatestVersion.`nIt will now restart.",
