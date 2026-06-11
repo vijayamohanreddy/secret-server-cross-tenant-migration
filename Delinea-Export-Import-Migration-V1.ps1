@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Delinea Secret Server Cross-Tenant Migration Tool V1 (Unofficial) — a GUI-based utility for
     exporting, importing, and migrating secrets, folders, permissions, templates,
@@ -270,6 +270,7 @@ if ($LocalVersion -ne $LatestVersion) {
 
 Write-Host "Version is up to date. Continuing execution..." -ForegroundColor Green
 Write-Host "=== VERSION CHECK END ===`n"
+
 # If we reach here, local == latest → continue script
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
