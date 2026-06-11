@@ -121,7 +121,7 @@
 # Optional: double-check unblock (harmless if already unblocked)
 $MyInvocation.MyCommand.Path | Unblock-File -ErrorAction SilentlyContinue
 # ============================================================
-# VERSION CHECK (Hidden AppData folder)
+# VERSION CHECK (Hidden AppData folder with safe ACLs)
 # ============================================================
 
 Add-Type -AssemblyName System.Windows.Forms
@@ -147,15 +147,22 @@ $ScriptDir = Split-Path -Parent $ScriptPath
 Write-Host "Script directory: $ScriptDir"
 
 # ============================================================
-# CREATE HIDDEN APPDATA FOLDER (NOT THE FILE)
+# CREATE HIDDEN APPDATA FOLDER WITH FULL ACLs
 # ============================================================
 
 $AppDataFolder = Join-Path $env:APPDATA "DelineaMigrationTool"
 
 if (-not (Test-Path $AppDataFolder)) {
     New-Item -ItemType Directory -Path $AppDataFolder | Out-Null
+
     # Hide the folder (safe)
     (Get-Item $AppDataFolder).Attributes += 'Hidden'
+
+    # Give current user full control
+    $acl = Get-Acl $AppDataFolder
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$env:USERNAME","FullControl","ContainerInherit,ObjectInherit","None","Allow")
+    $acl.SetAccessRule($rule)
+    Set-Acl $AppDataFolder $acl
 }
 
 $LocalVersionFile = Join-Path $AppDataFolder "version.local.txt"
