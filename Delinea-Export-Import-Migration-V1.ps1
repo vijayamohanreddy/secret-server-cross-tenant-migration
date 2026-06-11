@@ -172,8 +172,6 @@ if (-not (Test-Path $LocalVersionFile)) {
     "0.0.0" | Out-File -FilePath $LocalVersionFile -Encoding ASCII -Force
 }
 
-Write-Host "Local version file stored in hidden LocalAppData folder."
-
 # Remote version file (RAW GitHub URL)
 $RemoteVersionUrl = "https://raw.githubusercontent.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/main/version.txt"
 $RemoteScriptUrl  = "https://raw.githubusercontent.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/main/Delinea-Export-Import-Migration-V1.ps1"
