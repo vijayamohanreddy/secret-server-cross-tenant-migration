@@ -121,7 +121,7 @@
 # Optional: double-check unblock (harmless if already unblocked)
 $MyInvocation.MyCommand.Path | Unblock-File -ErrorAction SilentlyContinue
 # ============================================================
-# VERSION CHECK (Hidden LocalAppData folder)
+# VERSION CHECK (Hidden LocalAppData folder + Release Asset Download)
 # ============================================================
 
 Add-Type -AssemblyName System.Windows.Forms
@@ -155,12 +155,14 @@ $LocalAppDataFolder = Join-Path $env:LOCALAPPDATA "DelineaMigrationTool"
 if (-not (Test-Path $LocalAppDataFolder)) {
     New-Item -ItemType Directory -Path $LocalAppDataFolder | Out-Null
 
-    # Hide the folder (safe)
+    # Hide the folder
     (Get-Item $LocalAppDataFolder).Attributes += 'Hidden'
 
     # Give current user full control
     $acl = Get-Acl $LocalAppDataFolder
-    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$env:USERNAME","FullControl","ContainerInherit,ObjectInherit","None","Allow")
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+        "$env:USERNAME","FullControl","ContainerInherit,ObjectInherit","None","Allow"
+    )
     $acl.SetAccessRule($rule)
     Set-Acl $LocalAppDataFolder $acl
 }
@@ -174,7 +176,6 @@ if (-not (Test-Path $LocalVersionFile)) {
 
 # Remote version file (RAW GitHub URL)
 $RemoteVersionUrl = "https://raw.githubusercontent.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/main/version.txt"
-$RemoteScriptUrl  = "https://raw.githubusercontent.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/main/Delinea-Export-Import-Migration-V1.ps1"
 
 # Read local version
 try {
@@ -234,9 +235,22 @@ if ($LocalVersion -ne $LatestVersion) {
     if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
 
         try {
-            $TempFile = Join-Path $ScriptDir "Delinea-Export-Import-Migration-V1.ps1.new"
+            # ============================================================
+            # BUILD DYNAMIC RELEASE ASSET URL (GitHub counts downloads)
+            # ============================================================
+
+            $ReleaseTag = "v$LatestVersion"
+            $AssetFileName = "Delinea-Export-Import-Migration-V1.ps1"
+
+            $RemoteScriptUrl = "https://github.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/releases/download/$ReleaseTag/$AssetFileName"
+
+            # Temp file for download
+            $TempFile = Join-Path $ScriptDir "$AssetFileName.new"
+
+            # Download from Release Asset (GitHub counts this)
             Invoke-WebRequest -Uri $RemoteScriptUrl -OutFile $TempFile -UseBasicParsing -ErrorAction Stop
 
+            # Replace existing script
             Move-Item -Path $TempFile -Destination $ScriptPath -Force
 
             # Update version file
