@@ -1,4 +1,6 @@
 # Delinea Secret Server Cross-Tenant Migration Tool (Unofficial)
+# **Download the latest version from the Releases page:
+https://github.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/releases/latest
 
 # **Unofficial Tool:** This project is not affiliated with, endorsed by, or supported by any vendor or product owner.
 
