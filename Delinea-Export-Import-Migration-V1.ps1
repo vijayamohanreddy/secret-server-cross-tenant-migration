@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Delinea Secret Server Cross-Tenant Migration Tool V1 (Unofficial) — a GUI-based utility for
     exporting, importing, and migrating secrets, folders, permissions, templates,
@@ -120,7 +120,129 @@
 
 # Optional: double-check unblock (harmless if already unblocked)
 $MyInvocation.MyCommand.Path | Unblock-File -ErrorAction SilentlyContinue
+# ============================================================
+# SIMPLE POPUP VERSION CHECK + AUTO-DOWNLOAD + AUTO-UPDATE
+# ============================================================
 
+Add-Type -AssemblyName System.Windows.Forms
+
+Write-Host "`n=== VERSION CHECK START ===" -ForegroundColor Cyan
+
+# Ensure script is being executed from a .ps1 file
+$ScriptPath = $MyInvocation.MyCommand.Path
+Write-Host "Script path detected: $ScriptPath"
+
+if (-not $ScriptPath) {
+    [System.Windows.Forms.MessageBox]::Show(
+        "This script must be run from a .ps1 file.",
+        "Execution Error",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Error
+    )
+    return
+}
+
+# Determine script directory
+$ScriptDir = Split-Path -Parent $ScriptPath
+Write-Host "Script directory: $ScriptDir"
+
+# Local version file path
+$LocalVersionFile = Join-Path $ScriptDir 'version.local.txt'
+Write-Host "Local version file path: $LocalVersionFile"
+
+# Remote version file (RAW GitHub URL)
+$RemoteVersionUrl = "https://raw.githubusercontent.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/main/version.txt"
+$RemoteScriptUrl  = "https://raw.githubusercontent.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/main/Delinea-Export-Import-Migration-V1.ps1"
+
+Write-Host "Remote version URL: $RemoteVersionUrl"
+
+# Create local version file if missing
+if (-not (Test-Path $LocalVersionFile)) {
+    "0.0.0" | Out-File -FilePath $LocalVersionFile -Encoding ASCII -Force
+    Write-Host "Local version file not found. Created with version 0.0.0"
+}
+
+# Read local version
+$LocalVersion = (Get-Content -Path $LocalVersionFile -ErrorAction Stop | Select-Object -First 1).Trim()
+Write-Host "Local version: $LocalVersion"
+
+# Retrieve remote version
+try {
+    $LatestVersion = (Invoke-WebRequest -Uri $RemoteVersionUrl -UseBasicParsing -ErrorAction Stop).Content.Trim()
+    Write-Host "Latest version from GitHub: $LatestVersion"
+} catch {
+    [System.Windows.Forms.MessageBox]::Show(
+        "Unable to check for updates. Please ensure internet connectivity.",
+        "Update Check Failed",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Warning
+    )
+    return
+}
+
+# Validate remote version is not HTML
+if ($LatestVersion -like "<*") {
+    [System.Windows.Forms.MessageBox]::Show(
+        "GitHub returned HTML instead of version text. RAW URL is incorrect.",
+        "Version Check Error",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Error
+    )
+    return
+}
+
+# Compare versions
+if ($LocalVersion -ne $LatestVersion) {
+
+    $msg = "A NEW VERSION OF THIS TOOL IS AVAILABLE!`n`n" +
+           "Your local version: $LocalVersion`n" +
+           "Latest version:     $LatestVersion`n`n" +
+           "Click 'Yes' to download and update automatically."
+
+    $result = [System.Windows.Forms.MessageBox]::Show(
+        $msg,
+        "Update Available",
+        [System.Windows.Forms.MessageBoxButtons]::YesNo,
+        [System.Windows.Forms.MessageBoxIcon]::Information
+    )
+
+    if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+
+        try {
+            $TempFile = Join-Path $ScriptDir "Delinea-Export-Import-Migration-V1.ps1.new"
+            Invoke-WebRequest -Uri $RemoteScriptUrl -OutFile $TempFile -UseBasicParsing -ErrorAction Stop
+
+            Move-Item -Path $TempFile -Destination $ScriptPath -Force
+            $LatestVersion | Out-File -FilePath $LocalVersionFile -Encoding ASCII -Force
+
+            [System.Windows.Forms.MessageBox]::Show(
+                "The tool has been updated to version $LatestVersion.`nIt will now restart.",
+                "Update Complete",
+                [System.Windows.Forms.MessageBoxButtons]::OK,
+                [System.Windows.Forms.MessageBoxIcon]::Information
+            )
+
+            # Auto-restart
+            Start-Process "powershell.exe" "-ExecutionPolicy Bypass -File `"$ScriptPath`""
+            exit
+
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show(
+                "Failed to download or update the script.`nError: $_",
+                "Update Failed",
+                [System.Windows.Forms.MessageBoxButtons]::OK,
+                [System.Windows.Forms.MessageBoxIcon]::Error
+            )
+        }
+    }
+
+    Write-Host "`nExecution stopped because your version is outdated." -ForegroundColor Red
+    return
+}
+
+Write-Host "Version is up to date. Continuing execution..." -ForegroundColor Green
+Write-Host "=== VERSION CHECK END ===`n"
+# If we reach here, local == latest → continue script
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 # Detect if running as compiled exe (ps2exe)
