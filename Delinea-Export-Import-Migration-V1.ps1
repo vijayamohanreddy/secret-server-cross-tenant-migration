@@ -121,7 +121,7 @@
 # Optional: double-check unblock (harmless if already unblocked)
 $MyInvocation.MyCommand.Path | Unblock-File -ErrorAction SilentlyContinue
 # ============================================================
-# SIMPLE POPUP VERSION CHECK + AUTO-DOWNLOAD + AUTO-UPDATE
+# VERSION CHECK (AppData version storage)
 # ============================================================
 
 Add-Type -AssemblyName System.Windows.Forms
@@ -146,25 +146,37 @@ if (-not $ScriptPath) {
 $ScriptDir = Split-Path -Parent $ScriptPath
 Write-Host "Script directory: $ScriptDir"
 
-# Local version file path
-$LocalVersionFile = Join-Path $ScriptDir 'version.local.txt'
-Write-Host "Local version file path: $LocalVersionFile"
+# ============================================================
+# STORE VERSION FILE IN APPDATA (HIDDEN FROM USER)
+# ============================================================
+
+$AppDataFolder = Join-Path $env:APPDATA "DelineaMigrationTool"
+if (-not (Test-Path $AppDataFolder)) {
+    New-Item -ItemType Directory -Path $AppDataFolder | Out-Null
+}
+
+$LocalVersionFile = Join-Path $AppDataFolder "version.local.txt"
+
+# Hide the file if it exists
+if (Test-Path $LocalVersionFile) {
+    (Get-Item $LocalVersionFile).Attributes = 'Hidden'
+}
+
+Write-Host "Local version file stored in AppData (hidden)."
 
 # Remote version file (RAW GitHub URL)
 $RemoteVersionUrl = "https://raw.githubusercontent.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/main/version.txt"
 $RemoteScriptUrl  = "https://raw.githubusercontent.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/main/Delinea-Export-Import-Migration-V1.ps1"
 
-Write-Host "Remote version URL: $RemoteVersionUrl"
-
 # Create local version file if missing
 if (-not (Test-Path $LocalVersionFile)) {
     "0.0.0" | Out-File -FilePath $LocalVersionFile -Encoding ASCII -Force
-    Write-Host "Local version file not found. Created with version 0.0.0"
+    (Get-Item $LocalVersionFile).Attributes = 'Hidden'
 }
 
 # Read local version
 $LocalVersion = (Get-Content -Path $LocalVersionFile -ErrorAction Stop | Select-Object -First 1).Trim()
-Write-Host "Local version: $LocalVersion"
+Write-Host "Local version (hidden): $LocalVersion"
 
 # Retrieve remote version
 try {
@@ -214,6 +226,7 @@ if ($LocalVersion -ne $LatestVersion) {
 
             Move-Item -Path $TempFile -Destination $ScriptPath -Force
             $LatestVersion | Out-File -FilePath $LocalVersionFile -Encoding ASCII -Force
+            (Get-Item $LocalVersionFile).Attributes = 'Hidden'
 
             [System.Windows.Forms.MessageBox]::Show(
                 "The tool has been updated to version $LatestVersion.`nIt will now restart.",
@@ -222,7 +235,6 @@ if ($LocalVersion -ne $LatestVersion) {
                 [System.Windows.Forms.MessageBoxIcon]::Information
             )
 
-            # Auto-restart
             Start-Process "powershell.exe" "-ExecutionPolicy Bypass -File `"$ScriptPath`""
             exit
 
@@ -242,6 +254,7 @@ if ($LocalVersion -ne $LatestVersion) {
 
 Write-Host "Version is up to date. Continuing execution..." -ForegroundColor Green
 Write-Host "=== VERSION CHECK END ===`n"
+
 # If we reach here, local == latest → continue script
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
