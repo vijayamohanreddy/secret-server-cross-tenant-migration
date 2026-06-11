@@ -159,6 +159,7 @@ $LocalVersionFile = Join-Path $AppDataFolder "version.local.txt"
 
 # Create local version file if missing
 if (-not (Test-Path $LocalVersionFile)) {
+
     "0.0.0" | Out-File -FilePath $LocalVersionFile -Encoding ASCII -Force
 
     # Ensure file is readable/writable
@@ -167,7 +168,7 @@ if (-not (Test-Path $LocalVersionFile)) {
     $acl.SetAccessRule($rule)
     Set-Acl $LocalVersionFile $acl
 
-    # Hide the file (add attribute, do NOT overwrite)
+    # Hide the file (add attribute safely)
     (Get-Item $LocalVersionFile).Attributes += 'Hidden'
 }
 
