@@ -157,9 +157,23 @@ if (-not (Test-Path $AppDataFolder)) {
 
 $LocalVersionFile = Join-Path $AppDataFolder "version.local.txt"
 
-# Hide the file if it exists
+# Create local version file if missing
+if (-not (Test-Path $LocalVersionFile)) {
+    "0.0.0" | Out-File -FilePath $LocalVersionFile -Encoding ASCII -Force
+
+    # Ensure file is readable/writable
+    $acl = Get-Acl $LocalVersionFile
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("$env:USERNAME","FullControl","Allow")
+    $acl.SetAccessRule($rule)
+    Set-Acl $LocalVersionFile $acl
+
+    # Hide the file (add attribute, do NOT overwrite)
+    (Get-Item $LocalVersionFile).Attributes += 'Hidden'
+}
+
+# Ensure existing file is hidden (add attribute safely)
 if (Test-Path $LocalVersionFile) {
-    (Get-Item $LocalVersionFile).Attributes = 'Hidden'
+    (Get-Item $LocalVersionFile).Attributes += 'Hidden'
 }
 
 Write-Host "Local version file stored in AppData (hidden)."
@@ -168,14 +182,19 @@ Write-Host "Local version file stored in AppData (hidden)."
 $RemoteVersionUrl = "https://raw.githubusercontent.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/main/version.txt"
 $RemoteScriptUrl  = "https://raw.githubusercontent.com/vijayamohanreddy/delinea-secrets-server-migration-tool-unofficial/main/Delinea-Export-Import-Migration-V1.ps1"
 
-# Create local version file if missing
-if (-not (Test-Path $LocalVersionFile)) {
-    "0.0.0" | Out-File -FilePath $LocalVersionFile -Encoding ASCII -Force
-    (Get-Item $LocalVersionFile).Attributes = 'Hidden'
+# Read local version
+try {
+    $LocalVersion = (Get-Content -Path $LocalVersionFile -ErrorAction Stop | Select-Object -First 1).Trim()
+} catch {
+    [System.Windows.Forms.MessageBox]::Show(
+        "Unable to read version file in AppData. Access denied.",
+        "Version File Error",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Error
+    )
+    return
 }
 
-# Read local version
-$LocalVersion = (Get-Content -Path $LocalVersionFile -ErrorAction Stop | Select-Object -First 1).Trim()
 Write-Host "Local version (hidden): $LocalVersion"
 
 # Retrieve remote version
@@ -225,8 +244,10 @@ if ($LocalVersion -ne $LatestVersion) {
             Invoke-WebRequest -Uri $RemoteScriptUrl -OutFile $TempFile -UseBasicParsing -ErrorAction Stop
 
             Move-Item -Path $TempFile -Destination $ScriptPath -Force
+
+            # Update version file
             $LatestVersion | Out-File -FilePath $LocalVersionFile -Encoding ASCII -Force
-            (Get-Item $LocalVersionFile).Attributes = 'Hidden'
+            (Get-Item $LocalVersionFile).Attributes += 'Hidden'
 
             [System.Windows.Forms.MessageBox]::Show(
                 "The tool has been updated to version $LatestVersion.`nIt will now restart.",
